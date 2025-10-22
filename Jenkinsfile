@@ -1,42 +1,44 @@
 pipeline {
     agent any
 
-    stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'git@github.com:Bhanu-Prakash-18/ci-cd-projects.git'
-            }
-        }
+    environment {
+        IMAGE_NAME = "nginx-app"
+        CONTAINER_NAME = "nginx-app"
+        DOCKERFILE_PATH = "jenkins-docker-ci-cd/nginx-app"
+    }
 
+    stages {
         stage('Cleanup Old Container') {
             steps {
-                echo 'Stopping and removing any existing nginx container...'
-                sh 'docker stop nginx-app || true'
-                sh 'docker rm nginx-app || true'
+                echo "Stopping and removing any existing nginx container..."
+                sh '''
+                    docker stop $CONTAINER_NAME || true
+                    docker rm $CONTAINER_NAME || true
+                '''
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo 'Building nginx Docker image...'
-                sh 'docker build -t nginx-app ./jenkins-docker-ci-cd/nginx-app'
+                echo "Building nginx Docker image..."
+                sh "docker build -t $IMAGE_NAME $DOCKERFILE_PATH"
             }
         }
 
         stage('Run Docker Container') {
             steps {
-                echo 'Running nginx container on port 8080...'
-                sh 'docker run -d -p 8080:80 --name nginx-app nginx-app'
+                echo "Running nginx container..."
+                sh "docker run -d -p 8081:80 --name $CONTAINER_NAME $IMAGE_NAME"
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline completed successfully!'
+            echo "Pipeline succeeded! nginx app should be running on port 8081."
         }
         failure {
-            echo 'Pipeline failed.'
+            echo "Pipeline failed. Check the logs above."
         }
     }
 }
