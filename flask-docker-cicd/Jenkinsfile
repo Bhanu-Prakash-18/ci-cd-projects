@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+
+    triggers {
+        githubPush()  // Trigger build on GitHub push event
+    }
+
+    environment {
+        IMAGE_NAME = "flask-cicd-app"
+        CONTAINER_NAME = "flask-cicd-app"
+    }
+
+    stages {
+        stage('Cleanup Old Container') {
+            steps {
+                echo "Removing old container..."
+                sh '''
+                    docker stop $CONTAINER_NAME || true
+                    docker rm $CONTAINER_NAME || true
+                '''
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo "Building Docker image..."
+                sh "docker build -t $IMAGE_NAME ."
+            }
+        }
+
+        stage('Run Docker Container') {
+            steps {
+                echo "Running container..."
+                sh "docker run -d -p 5000:5000 --name $CONTAINER_NAME $IMAGE_NAME"
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Pipeline completed! Flask app is live at port 5000."
+        }
+        failure {
+            echo "Pipeline failed. Check logs."
+        }
+    }
+}
+
